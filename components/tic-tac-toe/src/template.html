@@ -1,0 +1,216 @@
+<div class="tic-tac-toe">
+  <div class="tic-tac-toe__header">
+    <img src=" /webcm/tic-tac-toe/public/icon.svg" width="32" height="32" alt="Tic Tac Toe icon" />
+    <span>Tic Tac Toe Game</span>
+  </div>
+
+
+  <div class="tic-tac-toe__controls">
+    <button class="tic-tac-toe__button" data-action="start-x" disabled>Start X</button>
+    <button class="tic-tac-toe__button" data-action="start-o" disabled>Start O</button>
+    <button class="tic-tac-toe__button" data-action="reset" disabled>Reset</button>
+  </div>
+
+  <div class="tic-tac-toe__status">
+    To start a game, click on the "Start X" or "Start O" button.
+  </div>
+
+  <div class="tic-tac-toe__board loading"></div>
+</div>
+<script>
+  const componentName = "tic-tac-toe";
+  const containerEl = document.querySelector(".tic-tac-toe");
+  const buttonEls = containerEl.querySelector(".tic-tac-toe__controls");
+  const statusEl = containerEl.querySelector(".tic-tac-toe__status");
+  const boardEl = containerEl.querySelector(".tic-tac-toe__board");
+
+  const startXButton = buttonEls.querySelector("[data-action=\"start-x\"]");
+  const startOButton = buttonEls.querySelector("[data-action=\"start-o\"]");
+  const resetButton = buttonEls.querySelector("[data-action=\"reset\"]");
+
+  let isLoading = true;
+  let isBoardDisabled = false;
+  let gameState;
+  initGame();
+
+  // action buttons
+  buttonEls.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const button = e.target;
+    if (button.disabled || isLoading) return;
+
+    setLoading(boardEl);
+    const action = button.dataset.action;
+    switch (action) {
+      case "start-x":
+        await startGame(1);
+        break;
+      case "start-o":
+        await startGame(2);
+        break;
+      case "reset":
+        gameState = await webcm.track("reset", { name: action, payload: {} }).then(o => o[componentName]);
+        renderBoard();
+        checkGameStatus();
+        removeLoading(boardEl);
+    }
+  });
+
+  // handle click on board cells
+  boardEl.addEventListener("click", async (event) => {
+    if (isBoardDisabled) return;
+    const { target } = event;
+    // ignore clicks on filled cells
+    if (target.textContent.trim() !== "") return;
+
+    const { x, y } = target.dataset;
+    await makePlayerMove(Number(x), Number(y));
+  });
+
+  async function initGame() {
+    gameState = await webcm.track("init", {}).then(o => o[componentName]);
+    renderBoard();
+    checkGameStatus();
+
+    const isNotEnded = gameState.winner.player === 0 && gameState.hasEmptyCells;
+    if (isNotEnded && gameState.state.playerType !== gameState.whoseTurn) {
+      await makeComputerMove();
+    } else {
+      removeLoading(boardEl);
+    }
+  }
+
+  async function startGame(playerType) {
+    setLoading(boardEl);
+    gameState = await webcm.track("start", { playerType }).then(o => o[componentName]);
+    renderBoard();
+    checkGameStatus();
+
+    if (gameState.whoseTurn !== playerType) {
+      await makeComputerMove();
+    } else {
+      removeLoading(boardEl);
+    }
+
+  }
+
+  async function makeMove(x, y, playerType) {
+    gameState = await webcm.track("move", { x, y, playerType }).then(o => o[componentName]);
+    setCell(x, y, playerType);
+    checkGameStatus();
+  }
+
+  async function makePlayerMove(x, y) {
+    setLoading(boardEl);
+    await makeMove(x, y, gameState.state.playerType);
+    checkGameStatus();
+
+    const isNotEnded = gameState.winner.player === 0 && gameState.hasEmptyCells;
+    if (isNotEnded) {
+      await makeComputerMove();
+    } else {
+      removeLoading(boardEl);
+    }
+  }
+
+  async function makeComputerMove() {
+    setLoading(boardEl);
+
+    const { playerType, board } = gameState.state;
+    const computerType = playerType === 1 ? 2 : 1;
+    const response = await fetch(`/webcm/${componentName}/ai-move`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        playerType: computerType,
+        board
+      })
+    });
+
+    const move = await response.json();
+
+    if (move) {
+      await makeMove(move.x, move.y, computerType);
+    }
+
+    removeLoading(boardEl);
+  }
+
+  function checkGameStatus() {
+    const { state: { playerType }, hasEmptyCells, winner, whoseTurn } = gameState;
+
+    isBoardDisabled = true;
+
+    // Not started
+    if (playerType === 0) {
+      statusEl.innerText = "To start a game, click on the 'Start X' or 'Start O' button.";
+      startXButton.disabled = false;
+      startOButton.disabled = false;
+      resetButton.disabled = true;
+      return;
+    }
+
+    startXButton.disabled = true;
+    startOButton.disabled = true;
+    resetButton.disabled = false;
+
+    // Has winner
+    if (winner.player !== 0) {
+      statusEl.innerText = winner.player === playerType
+        ? "You won!"
+        : (`Game over! The winner is ${cellToString(winner.player)}`);
+    } else if (!hasEmptyCells) {// Draw
+      statusEl.innerText = "It's a draw!";
+    } else {
+      isBoardDisabled = whoseTurn !== playerType;
+      statusEl.innerText = whoseTurn === playerType
+        ? `Your turn (${cellToString(playerType)}). Click on an empty cell to make a move.`
+        : `Computer's turn (${cellToString(playerType)}). Please wait...`;
+    }
+
+  }
+
+  function renderBoard() {
+    const { size, board } = gameState.state;
+
+    boardEl.innerHTML = board.map((cell, index) => {
+      const x = Math.floor(index / size);
+      const y = index % size;
+
+      const classes = `tic-tac-toe__cell${cell !== 0 ? " is-filled" : ""}`;
+
+      return `<div class="${classes}" data-x="${x}" data-y="${y}">${cellToString(cell)}</div>`;
+    }).join("");
+  }
+
+  function setCell(x, y, type) {
+    const cell = boardEl.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+    if (cell) {
+      cell.classList.add("is-filled");
+      cell.innerHTML = cellToString(type);
+    }
+  }
+
+  function cellToString(name) {
+    switch (name) {
+      case 1:
+        return "X";
+      case 2:
+        return "O";
+      default:
+        return " ";
+    }
+  }
+
+  function setLoading(element) {
+    isLoading = true;
+    element.classList.add("loading");
+  }
+
+  function removeLoading(element) {
+    isLoading = false;
+    element.classList.remove("loading");
+  }
+</script>

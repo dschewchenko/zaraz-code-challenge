@@ -3,15 +3,15 @@ export default {
   components: [
     {
       name: "tic-tac-toe",
-      settings: { ecommerce: true },
+      settings: {
+        apiUrl: "https://tic-tac-toe-ai.d-schewchenko91.workers.dev"
+      },
       permissions: [
         "access_client_kv",
-        "provide_server_functionality",
-        "provide_widget",
-        "serve_static_files",
-        "client_network_requests",
-        "execute_unsafe_scripts",
         "server_network_requests",
+        "serve_static_files",
+        "provide_server_functionality",
+        "provide_widget"
       ],
     },
   ],

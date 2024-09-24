@@ -32,3 +32,10 @@ We've provided a basic example of a widget in `index.ts`. Starting from this pro
 - users of your MC (via a site proxied by Webcm) should be able to complete a game of tic tac toe using the mouse, against an artificial adversary, with a declared winner when the game is over
 
 **Everything that was not mentioned above is optional.**
+
+## My Notes and Thoughts
+
+- I have used server to store game state and logic, because it's best-practice for online games for better security, consistency and lightweight client-side code
+- Better to use npm workspaces (monorepo) here or separate repos for MC and worker
+- It would be cool to make MC more like islands work in Nuxt 3. Like return initial state and then on changes update widget state from server
+- 

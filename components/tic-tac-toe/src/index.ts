@@ -1,76 +1,55 @@
-import { ComponentSettings, Manager } from "@managed-components/types"
+import type { ComponentSettings, Manager } from "@managed-components/types";
+import { ticTacToeComponent } from "./component";
+import { aiMoveRoute } from "@/routes/ai-move.route";
+import { moveHandler } from "@/handlers/move.handler";
+import { resetHandler } from "@/handlers/reset.handler";
+import { startGameHandler } from "@/handlers/start-game.handler";
+import { initHandler } from "@/handlers/init.handler";
 
-const widgetHTML = (location: string, temperature: number) => `
-    <style>
-        .widget-container {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 300px;
-            width: 100%;
-        }
-        .widget-header {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-        .widget-inputs {
-            margin-bottom: 15px;
-        }
-        .widget-inputs input {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .widget-inputs button {
-            padding: 10px 20px;
-            background: #007BFF;
-            border: none;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .widget-inputs button:hover {
-            background: #0056b3;
-        }
-        .weather-display {
-            font-size: 1.2em;
-            margin-top: 10px;
-        }
-    </style>  
+/**
+ * Managed Component registration
+ *
+ * - game widget
+ * - event listeners
+ * - AI move route
+ * - serve assets
+ */
+export default async function (manager: Manager, settings: ComponentSettings) {
+  // Register game widget
+  manager.registerWidget(() => ticTacToeComponent(manager, settings));
 
-    <div class="widget-container">
-        <div class="widget-header">Weather Widget</div>
-        <div class="weather-display" id="weather-display">
-          The temperature in ${location} is ${temperature}°C.
-        </div>
-    </div>
-`
+  // Events
+  manager.addEventListener("init", async ({ client }) => {
+    const res = await initHandler(manager, client.get("clientId") as string);
+    client.return(res);
+  });
 
-export default async function (manager: Manager, _settings: ComponentSettings) {
-  manager.addEventListener("pageview", (event) => {
-    console.log("Hello server!")
-    event.client.execute("console.log('Hello browser')")
-  })
+  manager.addEventListener("start", async ({ client, payload }) => {
+    const res = await startGameHandler(
+      manager,
+      client.get("clientId") as string,
+      payload.playerType,
+    );
+    client.return(res);
+  });
 
-  manager.registerWidget(async () => {
-    const location = "Colombia"
-    const widget = await manager.useCache("weather-" + location, async () => {
-      try {
-        const response = await manager.fetch(
-          `https://wttr.in/${location}?format=j1`
-        )
-        const data = await response?.json()
-        const [summary] = data.current_condition
-        const { temp_C } = summary
-        return widgetHTML(location, temp_C)
-      } catch (error) {
-        console.error("error fetching weather for widget:", error)
-      }
-    })
-    return widget
-  })
+  manager.addEventListener("move", async ({ client, payload }) => {
+    const res = await moveHandler(
+      manager,
+      client.get("clientId") as string,
+      payload,
+    );
+    client.return(res);
+  });
+
+  manager.addEventListener("reset", async ({ client }) => {
+    const res = await resetHandler(manager, client.get("clientId") as string);
+    client.return(res);
+  });
+
+  // computer move route
+  manager.route("/ai-move", aiMoveRoute(manager, settings));
+
+  // static files
+  manager.serve("/public", "assets");
 }

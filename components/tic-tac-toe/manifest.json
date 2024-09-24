@@ -1,40 +1,33 @@
 {
-  "name": "tic-tac-toe",
+  "name": "Tic Tac Toe Game",
   "namespace": "tic-tac-toe",
-  "description": "Returns an tic-tac-toe embed",
+  "description": "Returns an tic-tac-toe game widget",
   "icon": "assets/icon.svg",
+  "allowCustomFields": true,
   "permissions": {
-    "access_client_kv": {
-      "description": "This permission is used to facilitate better a user experience.",
-      "required": false
-    },
-    "access_extended_client_kv": {
-      "description": "This permission is used to facilitate better a user experience.",
-      "required": false
-    },
     "execute_unsafe_scripts": {
-      "description": "This permission is used to facilitate better a user experience.",
+      "description": "For debug purposes only",
       "required": false
     },
-    "client_network_requests": {
-      "description": "This permission is used to facilitate better a user experience.",
-      "required": false
+    "access_client_kv": {
+      "description": "We need this permission to store the game state",
+      "required": true
     },
     "server_network_requests": {
       "description": "This permission is used to facilitate better a user experience.",
-      "required": false
+      "required": true
     },
     "serve_static_files": {
-      "description": "This permission is used to facilitate better a user experience.",
-      "required": false
+      "description": "We need this permission to serve the widget files",
+      "required": true
     },
     "provide_server_functionality": {
-      "description": "This permission is used to facilitate better a user experience.",
-      "required": false
+      "description": "We need this permission to make requests to the server. Player's opponent will be the computer",
+      "required": true
     },
     "provide_widget": {
-      "description": "This permission is used to facilitate better a user experience.",
-      "required": false
+      "description": "We need this permission to render the widget with game",
+      "required": true
     }
   }
 }

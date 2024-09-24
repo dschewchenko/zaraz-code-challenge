@@ -1,0 +1,61 @@
+.tic-tac-toe {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: sans-serif;
+}
+
+.tic-tac-toe__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tic-tac-toe__controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tic-tac-toe__status {
+    margin-top: 16px;
+}
+
+.tic-tac-toe__board {
+    display: grid;
+    grid-template-columns: repeat(3, 48px);
+    grid-template-rows: repeat(3, 48px);
+    gap: 0;
+}
+
+.tic-tac-toe__board.loading {
+    position: relative;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.tic-tac-toe__board.loading::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    content: "Loading...";
+}
+
+.tic-tac-toe__cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #000;
+    font-family: monospace;
+    font-size: 32px;
+    font-weight: bold;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.tic-tac-toe__cell.is-filled {
+    cursor: not-allowed;
+    user-select: none;
+}
